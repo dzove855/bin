@@ -60,7 +60,7 @@ trap '_exit' EXIT
 for host in "${hosts[@]}"; do
     random="$RANDOM"
     tmpFiles+=("/tmp/$host.$random")
-    ssh -tt $host "sudo tail -f ${files[@]}" >> /tmp/$host.$random &
+    ssh -tt $host "tail -f ${files[@]}" >> /tmp/$host.$random &
     pids+=("$!")
 done
 
