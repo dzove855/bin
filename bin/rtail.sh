@@ -53,7 +53,7 @@ while getopts "${OPTS}" arg; do
 done
 shift $((OPTIND - 1))
 
-[[ -z "$host" || -z "$files" ]] && _quit 2 "$HELP"
+[[ -z "$hosts" || -z "$files" ]] && _quit 2 "$HELP"
 
 trap '_exit' EXIT
 
