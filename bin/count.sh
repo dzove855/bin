@@ -26,16 +26,14 @@ $USAGE
 
 "
 
-function _quit()
-{
+_quit(){
     local retCode="$1" msg="${*:2}"
 
     printf '%s\n' "$msg"
     exit $retCode
 }
 
-function _count()
-{
+_count(){
     local dir="$1" numfiles n _regex="$2"
 
     shopt -s nullglob
@@ -73,21 +71,17 @@ shift $((OPTIND - 1))
 
 
 # Run Commands for each dir
-for _dir in "${_dirs[@]}"
-do
+for _dir in "${_dirs[@]}"; do
     #Super glob
-    if [[ $_superGlob ]]
-    then
+    if [[ $_superGlob ]]; then
         _regex="**"
         _count "${_dir}" "$_regex"
     # check if find is defined
-    elif [[ $_find ]]
-    then
-        # Run count on subdirs
-        for _sub_dir in $(find ${_dir} $_maxdepth $opts)
-        do
+    elif [[ $_find ]]; then
+        while read -r _sub_dir; do
+            # Run count on subdirs
             _count "$_sub_dir" "$_regex"
-        done
+        done < <(find ${_dir} $_maxdepth $opts)
     else
         # run count on current dir
         _count "${_dir}" "$_regex"
