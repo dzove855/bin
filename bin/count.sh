@@ -3,7 +3,7 @@
 SELF="${BASH_SOURCE[0]##*/}"
 NAME="${SELF%.sh}"
 
-OPTS="d:m:f:SrsvxEh"
+OPTS="d:m:f:DSrsvxEh"
 USAGE="Usage: $SELF [$OPTS] dir1 dir2 ..."
 
 HELP="
@@ -13,8 +13,9 @@ $USAGE
         -S      Super glob (**)
         -r      Recursive 
         -m      Max depth (with -r)
-        -d      exclude dir (not implented)
+        -d      exclude dir
         -f      exclude symlinks (not implemented)
+        -D      Disable Dot Files
         -s      Simulate
         -v      set -v
         -x      set -x
@@ -34,28 +35,29 @@ _quit(){
 }
 
 _count(){
-    local dir="$1" numfiles n _regex="$2"
+    local dir="$1" numFiles _regex="$2"
 
-    shopt -s nullglob
-    shopt -s extglob
-    shopt -s globstar
-
-    numfiles=(${dir%/}/$_regex)
-    n="${#numfiles[@]}"
-    printf "%s : %s\n" "${dir%/}" "$n"
+    numFiles=(${dir%/}/$_regex)
+    printf "%s %s\n" "${dir%/}" "${#numFiles[@]}"
 }
 
 # default dir
-_dirs=("./")
-_regex="*"
+dirs=("./")
+regex="*"
+
+shopt -s nullglob
+shopt -s extglob
+shopt -s globstar
+shopt -s dotglob
 
 while getopts "${OPTS}" arg; do
     case "${arg}" in
-        r) _find=1; opts+=" -type d"                                            ;;
-        m) _maxdepth=" -maxdepth ${OPTARG}"                                     ;;
-        d) _regex="${OPTARG}"                                                   ;;
-        f) _exclude_symlink=1                                                   ;;
-        S) _superGlob=1                                                         ;;
+        r) find=1; opts+="-type d"                                              ;;
+        m) maxdepth="-maxdepth ${OPTARG}"                                       ;;
+        d) regex="!(${OPTARG})" prune="1" exclude="$OPTARG"                     ;;
+        f) exclude_symlink=1                                                    ;;
+        S) superGlob=1                                                          ;;
+        D) shopt -u dotglob; prune="1"; exclude="/."                            ;;
         s) _run="echo"                                                          ;;
         v) set -v                                                               ;;
         x) set -x                                                               ;;
@@ -67,23 +69,30 @@ while getopts "${OPTS}" arg; do
 done
 shift $((OPTIND - 1))
 
-[[ $# -eq 0 ]] || _dirs=($@)
+(( $# )) && dirs=($@)
 
 
 # Run Commands for each dir
-for _dir in "${_dirs[@]}"; do
+for dir in "${dirs[@]}"; do
     #Super glob
-    if [[ $_superGlob ]]; then
-        _regex="**"
-        _count "${_dir}" "$_regex"
+    if (( superGlob )); then
+        regex="**"
+        _count "${dir}" "$regex"
     # check if find is defined
-    elif [[ $_find ]]; then
-        while read -r _sub_dir; do
-            # Run count on subdirs
-            _count "$_sub_dir" "$_regex"
-        done < <(find ${_dir} $_maxdepth $opts)
+    elif (( find )); then
+        if (( prune )); then
+            while read -r subDir; do
+                # Run count on subdirs
+                _count "$subDir" "*"
+            done < <(find $dir $maxdepth -not -path "*$exclude*" $opts)
+        else
+            while read -r subDir; do
+                # Run count on subdirs
+                _count "$subDir" "*"
+            done < <(find $dir $maxdepth $opts)
+        fi
     else
         # run count on current dir
-        _count "${_dir}" "$_regex"
+        _count "$dir" "$regex"
     fi
 done
