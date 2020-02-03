@@ -52,7 +52,7 @@ $USAGE
 
 function do_quit ()
 {
-    local retCode="$1" msg="${@:2}"
+    local retCode="$1" msg="${*:2}"
 
     printf '%s \n' "$msg"
     exit "$retCode"
@@ -72,7 +72,7 @@ function _set_expression()
     do
         for value in "$@"
         do
-            declare -g ${value}="${!value//$key/${_expressions[$key]}}"
+            declare -g "${value}"="${!value//$key/${_expressions[$key]}}"
         done
     done
 }
@@ -146,7 +146,7 @@ function _ansible
     _check _host _module _options
 
     # run ansible
-    ansible $_inventory $_host -m $_module -a "$_options" $_opts -e "$_vars" --ssh-common-args="$_ssh"
+    ansible "$_inventory" "$_host" -m "$_module" -a "$_options" "$_opts" -e "$_vars" --ssh-common-args="$_ssh"
 }
 
 # hash ansible
@@ -183,8 +183,8 @@ shift $((OPTIND - 1))
 # get what action is set and the define the needed configuration
 case "${_action}" in
     _rsync) _src="$1" _dest="$2"                                        ;;
-    _shell) _command="$@"                                               ;;
-    _push)  _src="$1" _command="${@:2}"                                 ;;
+    _shell) _command="$*"                                               ;;
+    _push)  _src="$1" _command="${*:2}"                                 ;;
     *) do_quit 2 "$HELP"                                                ;;
 esac
 

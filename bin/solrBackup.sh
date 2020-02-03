@@ -6,7 +6,6 @@
 # Should be run on local solr nodes, because solr only backup local
 
 SELF="${BASH_SOURCE[0]##*/}"
-NAME="${SELF%.sh}"
 
 OPTS="d:u:c:svxEh"
 USAGE="Usage: $SELF [$OPTS]"
@@ -33,7 +32,7 @@ quit (){
     local retCode="$1" msg="${*:2}"
 
     printf '%s\n' "$msg"
-    exit $retCode
+    exit "$retCode"
 }
 
 [[ "$BASH_VERSION" =~ ^5.* ]] || EPOCHSECONDS="$(date +%s)"
@@ -44,8 +43,8 @@ _backupDir="/var/backups/solr"
 while getopts "${OPTS}" arg; do
     case "${arg}" in
         d) _backupDir="${OPTARG}"                                       ;;
-        u) IFS=',' read -a _solrHost <<<"$OPTARG"                       ;;
-        c) IFS=',' read -a _collections <<<"$OPTARG"                    ;;
+        u) IFS=',' read -ra _solrHost <<<"$OPTARG"                      ;;
+        c) IFS=',' read -ra _collections <<<"$OPTARG"                   ;;
         v) set -v                                                       ;;
         x) set -x                                                       ;;
         e) set -ve                                                      ;;
@@ -71,15 +70,15 @@ for host in "${_solrHost[@]}"; do
     [[ -z "$reqHost" ]] && continue
 
     # Check if collection are specified by the user, if not get the list of all collections
-    if [[ -z "$_collections" ]]; then
+    if [[ -z "${_collections[0]}" ]]; then
         collectionJson="$(curl -s -X GET "${host%/}/api/cluster")"
         [[ -z "$collectionJson" ]] && continue
-        _collections=($(printf '%s' "$collectionJson" | jq -r '.collections[]'))
+        read -ra _collections <<<"$(printf '%s' "$collectionJson" | jq -r '.collections[]'))"
     fi     
     
     for collection in "${_collections[@]}"; do
         if ! [[ -d "$_backupDir/$reqHost/$collection" ]]; then
-            mkdir -p $_backupDir/$reqHost/$collection || quit 2 "Could not create backupDir ($_backupDir/$reqHost/$collection)"
+            mkdir -p "$_backupDir/$reqHost/$collection" || quit 2 "Could not create backupDir ($_backupDir/$reqHost/$collection)"
         fi
 
         # Gzip old backupData

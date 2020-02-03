@@ -1,9 +1,8 @@
 #!/bin/bash
 
 SELF="${BASH_SOURCE[0]##*/}"
-NAME="${SELF%.sh}"
 
-OPTS="svxEh"
+OPTS="vxEh"
 USAGE="Usage: $SELF [$OPTS]"
 
 HELP="
@@ -20,15 +19,14 @@ $USAGE
 "
 
 _quit (){
-    local retCode="$1" msg="${@:2}"
+    local retCode="$1" msg="${*:2}"
 
     printf '%s\n' "$msg"
-    exit $retCode
+    exit "$retCode"
 }
 
 while getopts "${OPTS}" arg; do
     case "${arg}" in
-        s) _run="echo"                                                  ;;
         v) set -v                                                       ;;
         x) set -x                                                       ;;
         E) set -vE                                                      ;;
@@ -40,5 +38,5 @@ done
 shift $((OPTIND - 1))
 
 for key in "$@"; do
-    echo "$key : ${#key}"
+    printf '%s : %s\n' "$key" "${#key}"
 done

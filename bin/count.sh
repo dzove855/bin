@@ -1,9 +1,8 @@
 #!/bin/bash
 
 SELF="${BASH_SOURCE[0]##*/}"
-NAME="${SELF%.sh}"
 
-OPTS="d:m:f:DSrsvxEh"
+OPTS="d:m:f:DSrvxEh"
 USAGE="Usage: $SELF [$OPTS] dir1 dir2 ..."
 
 HELP="
@@ -31,13 +30,13 @@ _quit(){
     local retCode="$1" msg="${*:2}"
 
     printf '%s\n' "$msg"
-    exit $retCode
+    exit "$retCode"
 }
 
 _count(){
     local dir="$1" numFiles _regex="$2"
-
-    numFiles=(${dir%/}/$_regex)
+    #shellcheck disable=SC2206
+    numFiles=("${dir%/}"/$_regex)
     printf "%s %s\n" "${dir%/}" "${#numFiles[@]}"
 }
 
@@ -55,10 +54,10 @@ while getopts "${OPTS}" arg; do
         r) find=1; opts+="-type d"                                              ;;
         m) maxdepth="-maxdepth ${OPTARG}"                                       ;;
         d) regex="!(${OPTARG})" prune="1" exclude="$OPTARG"                     ;;
-        f) exclude_symlink=1                                                    ;;
+        # XXX: Not implemented yet
+        #f) exclude_symlink=1                                                    ;;
         S) superGlob=1                                                          ;;
         D) shopt -u dotglob; prune="1"; exclude="/."                            ;;
-        s) _run="echo"                                                          ;;
         v) set -v                                                               ;;
         x) set -x                                                               ;;
         E) set -vE                                                              ;;
@@ -69,7 +68,7 @@ while getopts "${OPTS}" arg; do
 done
 shift $((OPTIND - 1))
 
-(( $# )) && dirs=($@)
+(( $# )) && read -ra dirs <<<"$*"
 
 
 # Run Commands for each dir
@@ -84,12 +83,12 @@ for dir in "${dirs[@]}"; do
             while read -r subDir; do
                 # Run count on subdirs
                 _count "$subDir" "*"
-            done < <(find $dir $maxdepth -not -path "*$exclude*" $opts)
+            done < <(find "$dir" "$maxdepth" -not -path "*$exclude*" "$opts")
         else
             while read -r subDir; do
                 # Run count on subdirs
                 _count "$subDir" "*"
-            done < <(find $dir $maxdepth $opts)
+            done < <(find "$dir" "$maxdepth" "$opts")
         fi
     else
         # run count on current dir

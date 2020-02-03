@@ -1,6 +1,7 @@
 #!/bin/bash
 
 SELF="${BASH_SOURCE[0]##*/}"
+#shellcheck disable=SC2034
 NAME="${SELF%.sh}"
 
 OPTS="l:SsvxEh"
@@ -22,15 +23,16 @@ $USAGE
 "
 
 _quit (){
-    local retCode="$1" msg="${@:2}"
+    local retCode="$1" msg="${*:2}"
 
     printf '%s\n' "$msg"
-    exit $retCode
+    exit "$retCode"
 }
 
 lastChar="12"
 
 while getopts "${OPTS}" arg; do
+    #shellcheck disable=SC2034
     case "${arg}" in
         l) lastChar="$OPTARG"                                           ;;
         S) noSpecial="1"                                                ;;
@@ -49,12 +51,10 @@ set -o noglob
 
 alphaArr=({a..z} {A..Z})
 numArr=({0..9})
-specialArr=("+" "-" "_" "." "!" "(" ")" "?" "," "=" "~" "/" '\' "&" "|" "@" "^" "$" "]" "[" '*' '`' '"' "'" '´' "%" "{" "}" "<" ">")
+specialArr=("+" "-" "_" "." "!" "(" ")" "?" "," "=" "~" "/" '\' "&" "|" "@" "^" "$" "]" "[" '*' '`' '"' '´' "%" "{" "}" "<" ">")
 
 alphaNumArr=(${alphaArr[@]} ${numArr[@]})
 allCharArr=(${alphaNumArr[@]} ${specialArr[@]})
-
-firstChar=""
 
 for ((number=1;number<=lastChar;number++)); do
     if [[ "$number" == @(1|$lastChar) ]]; then

@@ -1,9 +1,8 @@
 #!/bin/bash
 
 SELF="${BASH_SOURCE[0]##*/}"
-NAME="${SELF%.sh}"
 
-OPTS="S:n:c:svxEh"
+OPTS="S:n:c:vxEh"
 USAGE="Usage: $SELF [$OPTS]"
 
 HELP="
@@ -23,10 +22,10 @@ $USAGE
 
 function _quit ()
 {
-    local retCode="$1" msg="${@:2}"
+    local retCode="$1" msg="${*:2}"
 
-    echo -e "$msg"
-    exit $retCode
+    printf '%s\n' "$msg"
+    exit "$retCode"
 }
 
 declare -i _port
@@ -36,7 +35,6 @@ while getopts "${OPTS}" arg; do
         S) _server="${OPTARG%%/*}" _port="${OPTARG#*/}"                 ;;
         n) _nickname="${OPTARG}"                                        ;;
         c) _channel="${OPTARG}"                                         ;;
-        s) _run="echo"                                                  ;;
         v) set -v                                                       ;;
         x) set -x                                                       ;;
         e) set -ve                                                      ;;
@@ -53,9 +51,9 @@ shift $((OPTIND - 1))
 
 [[ -z "$_port" ]] && _port="6667"
 
-message="${@:-/dev/stdin}"
+message="${*:-/dev/stdin}"
 
-exec 5>/dev/tcp/$_server/$_port
+exec 5>/dev/tcp/"$_server"/"$_port"
 
 echo "NICK $_nickname" >&5
 echo "USER $_nickname 8 *: $_nickname" >&5

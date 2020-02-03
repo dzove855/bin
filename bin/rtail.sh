@@ -1,6 +1,7 @@
 #!/bin/bash
 
 SELF="${BASH_SOURCE[0]##*/}"
+#shellcheck disable=SC2034
 NAME="${SELF%.sh}"
 
 OPTS="H:f:svxEh"
@@ -27,21 +28,22 @@ $USAGE
 "
 
 _quit (){
-    local retCode="$1" msg="${@:2}"
+    local retCode="$1" msg="${*:2}"
 
     printf '%s\n' "$msg"
-    exit $retCode
+    exit "$retCode"
 }
 
 _exit(){
-    rm ${tmpFiles[@]}
-    kill ${pids[@]}
+    rm "${tmpFiles[@]}"
+    kill "${pids[@]}"
 }
 
 while getopts "${OPTS}" arg; do
+    #shellcheck disable=SC2034
     case "${arg}" in
-        H) IFS=',' read -a hosts <<<"$OPTARG"                           ;;
-        f) IFS=',' read -a files <<<"$OPTARG"                           ;;
+        H) IFS=',' read -ra hosts <<<"$OPTARG"                          ;;
+        f) IFS=',' read -ra files <<<"$OPTARG"                          ;;
         s) _run="echo"                                                  ;;
         v) set -v                                                       ;;
         x) set -x                                                       ;;
@@ -53,16 +55,16 @@ while getopts "${OPTS}" arg; do
 done
 shift $((OPTIND - 1))
 
-[[ -z "$hosts" || -z "$files" ]] && _quit 2 "$HELP"
+[[ -z "${hosts[0]}" || -z "${files[0]}" ]] && _quit 2 "$HELP"
 
 trap '_exit' EXIT
 
 for host in "${hosts[@]}"; do
     random="$RANDOM"
     tmpFiles+=("/tmp/$host.$random")
-    ssh -tt $host "tail -f ${files[@]}" >> /tmp/$host.$random &
+    ssh -tt "$host" "tail -f ${files[*]}" >> "/tmp/$host.$random" &
     pids+=("$!")
 done
 
-tail -f ${tmpFiles[@]}
+tail -f "${tmpFiles[@]}"
 
