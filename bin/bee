@@ -1,0 +1,92 @@
+#!/bin/bash
+
+# A simple tee in pure bash 
+# Implement reopen files
+
+SELF="${BASH_SOURCE[0]##*/}"
+
+OPTS="ah"
+USAGE="Usage: $SELF [$OPTS] FILE1 FILE2 ..."
+
+HELP="
+$USAGE
+
+    Options:
+        -a      append
+        -h      Help
+
+"
+
+_quit(){
+    local retCode="$1" msg="${*:2}"
+
+    printf '%s\n' "$msg"
+    exit "$retCode"
+}
+
+
+fdOpen(){
+    # open all file descriptors. 
+    # NOTE: eval is needed in this situation, since exec doesn't exec variables..
+    for fd in "${!fileDescriptors[@]}"; do
+        eval "exec $fd>> ${fileDescriptors[$fd]}"
+    done
+}
+
+fdClose(){
+    # close all file descriptors
+    # NOTE: eval is needed in this situation, since exec doesn't exec variables..
+    for fd in "${!fileDescriptors[@]}"; do
+        eval "exec $fd>&-"
+    done
+}
+
+fdReopen(){
+    # Reopen all file descriptors
+    fdClose
+    fdOpen
+}
+
+# The filedescriptors should start at 10
+startingFd=10
+
+# As default we should not append
+append=0
+
+# parse simple options, we will only accept short opts
+while getopts "${OPTS}" arg; do
+    case "${arg}" in
+        a) append=1                                                             ;;
+        h) _quit 0 "$HELP"                                                      ;;
+        ?) _quit 1 "Invalid Argument: $USAGE"                                   ;;
+        *) _quit 1 "$USAGE"                                                     ;;
+    esac
+done
+shift $((OPTIND - 1))
+
+# exit if no arg is given
+(( $# )) || _quit 0 "$HELP" 
+
+# check if file exist and is writeable, if file does not exist then it will be created
+for file in "$@"; do
+    if [[ -f "$file" ]]; then
+        ! [[ -w "$file" ]] && _quit 2 'File %s is not writable!\n' "$file"
+        (( append )) || : > "$file"
+    fi
+ 
+    fileDescriptors[$startingFd]="$file"
+    ((startingFd++))
+done
+
+# trap SIGUSR1 to reopen fd, if file was removed and should be recreated
+trap 'fdReopen' SIGUSR1
+
+# Open All needed file Descriptors
+fdOpen
+
+# read stding and save it to the fd
+while read -r line; do
+    for fd in "1" "${!fileDescriptors[@]}";do
+        printf '%s\n' "$line" >&"$fd"
+    done
+done
