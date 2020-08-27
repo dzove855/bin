@@ -78,7 +78,7 @@ for value in masterKey url requestMethod; do
     [[ -z "${!value}" ]] && _quit 2 "value is missing"
 done 
 
-printf -v date '%(%a, %d %b %Y %T %Z)T'  -1
+TZ=GMT printf -v date '%(%a, %d %b %Y %T %Z)T'  -1
 
 date="${AZUREDATE:-$date}"
 
